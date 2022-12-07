@@ -22,10 +22,15 @@
 #include "loongson-firmware.h"
 #include "loongson-fan.h"
 #include "loongson-utils.h"
+#include "daemon-dbus-generated.h"
 
+#define LOONGSON_NAME       "cn.loongson.daemon"
+#define LOONGSON_PATH       "/cn/loongson/daemon"
+ 
 struct _ToolsWindow
 {
     GtkWindow     window;
+    LoongDaemon  *proxy;
     GtkWidget    *firmware;
     GtkWidget    *fan;
     GtkWidget    *usb;
@@ -107,7 +112,7 @@ tools_window_init (ToolsWindow *toolswin)
 
 static void tools_window_update (ToolsWindow *win)
 {
-    loongson_firmware_update (LOONGSON_FIRMWARE (win->firmware));
+    loongson_firmware_update (LOONGSON_FIRMWARE (win->firmware), win->proxy);
     loongson_fan_update (LOONGSON_FAN (win->fan));
 }
 
@@ -116,12 +121,26 @@ GtkWidget *
 tools_window_new (void)
 {
     ToolsWindow *toolswin;
+    GError      *error = NULL;
 
     toolswin = g_object_new (TOOLS_TYPE_WINDOW,
                              "type", GTK_WINDOW_TOPLEVEL,
                               NULL);
-
     
+    toolswin->proxy = loong_daemon_proxy_new_for_bus_sync (G_BUS_TYPE_SYSTEM,
+                                                           G_DBUS_PROXY_FLAGS_NONE,
+                                                           LOONGSON_NAME,
+                                                           LOONGSON_PATH,
+                                                           NULL,
+                                                           &error);
+    
+    if (toolswin->proxy == NULL)
+    {
+        loongson_message_dialog (_("Daemon Proxy"), ERROR, error->message);
+        return NULL;
+    }
+
     tools_window_update (toolswin);
+    
     return GTK_WIDGET (toolswin);
 }

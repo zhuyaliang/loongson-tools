@@ -22,14 +22,6 @@
 
 #define MSGFORMAT           "<span foreground='red'font_desc='13'>%s </span>"
 
-typedef enum
-{
-    ERROR = 0,
-    WARING,
-    INFOR,
-    QUESTION
-}MsgType;
-
 void set_lable_style (GtkWidget  *lable,
                       const char *color,
                       int         font_szie,

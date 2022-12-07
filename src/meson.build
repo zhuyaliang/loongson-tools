@@ -8,14 +8,6 @@ sources = [
 'loongson-utils.c',
 ]
 
-executable('loongson-tools',
-  sources : sources,
-  dependencies : [gtk_deps, gtop_dep],
-  include_directories: top_srcdir,
-  install : true,
-  install_dir : get_option('bindir')
-  )
-
 gdbus_src = gnome.gdbus_codegen(
     'daemon-dbus-generated',
     join_paths(data_dir, 'cn.loongson.daemon.xml'),
@@ -31,3 +23,12 @@ executable(
     install : true,
     install_dir : join_paths(get_option('prefix'), get_option('libexecdir'), 'loongson-daemon')
 )
+
+executable('loongson-tools',
+  sources : sources + gdbus_src,
+  dependencies : [gtk_deps, gtop_dep],
+  include_directories: top_srcdir,
+  install : true,
+  install_dir : get_option('bindir')
+  )
+

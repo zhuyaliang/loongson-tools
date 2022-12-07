@@ -193,9 +193,17 @@ loongson_firmware_get_label (LoongsonFirmware *firmware)
 }
 
 void
-loongson_firmware_update (LoongsonFirmware *firmware)
+loongson_firmware_update (LoongsonFirmware *firmware, LoongDaemon  *proxy)
 {
-    set_lable_style (firmware->name_label, "gray", 14, "Loongson-UDK2018-V1.49", TRUE);
+    char *name;
+    GError *error = NULL;
+
+    loong_daemon_call_firmware_name_sync (proxy,
+                                          &name,
+                                          NULL,
+                                          &error);
+
+    set_lable_style (firmware->name_label, "gray", 14, name, TRUE);
     set_lable_style (firmware->time_label, "gray", 14, "2022/12/06", TRUE);
     set_lable_style (firmware->vendor_label, "gray", 14, "Loongson", TRUE);
     set_lable_style (firmware->bios_label, "gray", 14, "v2.0", TRUE);
