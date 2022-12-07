@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<node>
+    <interface name="cn.loongson.daemon">
+        <method name="FirmwareName">
+            <arg name="name" type="s" direction="out"/>
+        </method>
+
+        <method name="FirmwareDate">
+            <arg name="date" type="s" direction="out"/>
+        </method>
+
+        <method name="FirmwareVendor">
+            <arg name="vendor" type="s" direction="out"/>
+        </method>
+
+        <method name="FirmwareUpdate">
+            <arg name="file" direction="in" type="s"/>
+        </method>
+
+        <method name="BiosVersion">
+            <arg name="version" type="s" direction="out"/>
+        </method>
+
+        <method name="CpuTemperature">
+            <arg name="temp" type="s" direction="out"/>
+        </method>
+
+        <method name="FanSpeed">
+            <arg name="speed" type="s" direction="out"/>
+        </method>
+
+    </interface>
+</node>

@@ -1,0 +1,6 @@
+src/loongson-fan.c
+src/loongson-firmware.c
+src/loongson-server.c
+src/loongson-utils.c
+src/main.c
+src/tools-window.c

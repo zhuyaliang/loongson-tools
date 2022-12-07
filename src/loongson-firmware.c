@@ -39,7 +39,6 @@ static void
 loongson_firmware_fill (LoongsonFirmware *firmware)
 {
     GtkWidget *label;
-    GtkWidget *box;
     GtkWidget *hbox;
     GtkWidget *vbox;
     GtkWidget *vbox1; 

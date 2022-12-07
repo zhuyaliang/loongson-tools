@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+ <id>loongson-daemon.desktop</id>
+ <metadata_license>CC0-1.0</metadata_license>
+ <project_license>GPL-3.0+</project_license>
+ <name>Loongson Tools</name>
+ <summary>Loongson setting tool</summary>
+ <description>
+ <p>
+   Loonson setting tool is a graphical tool based on gtk3 to view the CPU daemonrmation of loongson3a4000 (MIPS64) and loongson3a5000 (loongarch). It can view the CPU, performance, configuration, design specification and status.
+ </p>
+ </description>
+ <url type="homepage">https://www.loongson.cn/</url>
+ <updatecontact>https://www.loongson.cn/</updatecontact>
+ <project_group>Loongson</project_group>
+</component>

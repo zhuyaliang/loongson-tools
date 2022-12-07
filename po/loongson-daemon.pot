@@ -1,0 +1,39 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the loongson-daemon package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: loongson-daemon\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-12-07 20:18+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/loongson-server.c:19
+msgid "Enable debugging code"
+msgstr ""
+
+#: src/loongson-server.c:25
+msgid "Replace a currently running application"
+msgstr ""
+
+#: src/loongson-server.c:45
+#, c-format
+msgid "Failed to parse command line arguments: %s"
+msgstr ""
+
+#: src/loongson-utils.c:126
+msgid "Message"
+msgstr ""
+
+#: src/tools-window.c:101
+msgid "Loonsgon Tools"
+msgstr ""

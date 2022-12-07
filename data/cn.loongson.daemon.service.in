@@ -1,0 +1,5 @@
+[D-BUS Service]
+Name=cn.loongson.daemon
+Exec=@pkglibexecdir@/loongson-daemond
+User=root
+SystemdService=loongson-daemon.service

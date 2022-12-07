@@ -105,7 +105,7 @@ tools_window_init (ToolsWindow *toolswin)
     gtk_window_set_default_size (GTK_WINDOW (window), 550, 500);
 }
 
-void tools_window_update (ToolsWindow *win)
+static void tools_window_update (ToolsWindow *win)
 {
     loongson_firmware_update (LOONGSON_FIRMWARE (win->firmware));
     loongson_fan_update (LOONGSON_FAN (win->fan));

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Loongsons Tool
+Comment=Loongson CPU daemonrmation viewing tool
+Categories=GTK;Settings;System;Utility;
+Keywords=Configuration;Utility;
+Exec=loongson-daemon
+Icon=loongson-daemon
+Terminal=false
+Type=Application
