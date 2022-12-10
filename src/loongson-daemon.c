@@ -1,19 +1,30 @@
 #include <stdio.h>
-
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <gio/gio.h>
 #include <glib/gi18n.h>
+#include <sys/mman.h>
 #include "daemon-dbus-generated.h"
 #include "loongson-daemon.h"
 
-#define LOONGSON_DBUS_NAME "cn.loongson.daemon"
-#define LOONGSON_DBUS_PATH "/cn/loongson/daemon"
+#define LS7A_CONF_BASE_ADDR   0x10010000
+#define LS7A_MISC_BASE_ADDR   0x10080000
 
+#define LOONGSON_DBUS_NAME    "cn.loongson.daemon"
+#define LOONGSON_DBUS_PATH    "/cn/loongson/daemon"
+
+typedef unsigned long long ull;
+typedef unsigned short     UINT16;
+typedef unsigned int       UINT32;
+typedef unsigned char      UINT8;
 
 struct _LoongsonDaemon
 {
     GObject            parent;
     LoongDaemon       *skeleton;
     guint              bus_name_id;
+    int                fd;
     GMainLoop         *loop;
     gboolean           replace;
 };
@@ -31,6 +42,21 @@ static GParamSpec *properties[LAST_PROP] = { NULL };
 
 G_DEFINE_TYPE (LoongsonDaemon, loongson_daemon, G_TYPE_OBJECT)
 
+static void *vtpa (ull vaddr, int fd)
+{
+    void *p = NULL;
+    ull   memmask;
+    int   memoffset;
+
+    memmask = vaddr & ~(0xffff);
+    memoffset = vaddr & (0xffff);
+
+    p = (void*)mmap (NULL, 0x10000/*64K*/, PROT_READ|PROT_WRITE, MAP_SHARED, fd, memmask);
+    p = (unsigned char *)p + memoffset;
+
+    return p;
+}
+
 static gboolean loongson_daemon_get_biso_version (LoongDaemon *object,
                                                   GDBusMI     *invocation,
                                                   gpointer     user_data)
@@ -46,21 +72,52 @@ static gboolean loongson_daemon_get_cpu_temperature (LoongDaemon *object,
                                                      GDBusMI     *invocation,
                                                      gpointer     user_data)
 {
-    gchar *temp = "60";
+    LoongsonDaemon *daemon = LOONGSON_DAEMON (user_data);
+    void  *p = NULL;
+    UINT32 val32;
+    UINT16 tmp0,tmp1;
+    UINT8  cputemp0,cputemp1;
+    guint8 cputemp;
+    p = vtpa (CPU_TEMP_REG, daemon->fd);
 
-    loong_daemon_complete_cpu_temperature (object, invocation, g_strdup (temp));
-    
+    val32 = Readl (p);
+    tmp0 = val32 & 0xffff;
+    cputemp0 = tmp0 * 731 / 0x4000 - 273;
+    tmp1 = (val32 & (0xffff << 16)) >> 16;
+    cputemp1 = tmp1 * 731 / 0x4000 - 273;
+
+    cputemp = (cputemp0 + cputemp1) / 2;
+
+    loong_daemon_complete_cpu_temperature (object, invocation, cputemp);
+
     return TRUE;
 }
 
-static gboolean loongson_daemon_get_fan_speed (LoongDaemon *object,
+static gboolean loongson_daemon_set_fan_speed (LoongDaemon *object,
                                                GDBusMI     *invocation,
+                                               guint        speed,
                                                gpointer     user_data)
 {
-    gchar *fan_speed = "80";
+    LoongsonDaemon *daemon = LOONGSON_DAEMON (user_data);
+    void   *p = NULL;
+    UINT32  min, max;
 
-    loong_daemon_complete_fan_speed (object, invocation, g_strdup (fan_speed));
-    
+    g_return_val_if_fail (speed > 0, FALSE);
+    g_return_val_if_fail (speed < 101, FALSE);
+
+    p = vtpa (LS7A_MISC_BASE_ADDR + LS7A_PWM_BASE, daemon->fd);
+
+    min = 100 * (100 - speed);
+    max = 100 * 100;
+
+    Readl ((unsigned char*)p + LS7A_PWM0_CTRL) &= ~1;
+    Writel ((unsigned char*)p + LS7A_PWM0_LOW, min);
+    Writel ((unsigned char*)p + LS7A_PWM0_FULL, max);
+    Readl ((unsigned char*)p + LS7A_PWM0_CTRL) |= 1;
+
+    loong_daemon_complete_set_fan_speed (object, invocation);
+    loong_daemon_set_get_fan_speed (object, speed);
+
     return TRUE;
 }
 
@@ -110,9 +167,10 @@ static gboolean loongson_daemon_get_firmware_vendor (LoongDaemon *object,
 
 static void set_dbus_signal_method (LoongsonDaemon *daemon)
 {
+    loong_daemon_set_get_fan_speed (daemon->skeleton, 80);
     g_signal_connect (daemon->skeleton, "handle_bios_version", G_CALLBACK (loongson_daemon_get_biso_version), daemon);
     g_signal_connect (daemon->skeleton, "handle_cpu_temperature", G_CALLBACK (loongson_daemon_get_cpu_temperature), daemon);
-    g_signal_connect (daemon->skeleton, "handle_fan_speed", G_CALLBACK (loongson_daemon_get_fan_speed), daemon);
+    g_signal_connect (daemon->skeleton, "handle_set_fan_speed", G_CALLBACK (loongson_daemon_set_fan_speed), daemon);
     g_signal_connect (daemon->skeleton, "handle_firmware_date", G_CALLBACK (loongson_daemon_get_firmware_date), daemon);
     g_signal_connect (daemon->skeleton, "handle_firmware_name", G_CALLBACK (loongson_daemon_get_firmware_name), daemon);
     g_signal_connect (daemon->skeleton, "handle_firmware_update", G_CALLBACK (loongson_daemon_firmware_update), daemon);
@@ -197,6 +255,11 @@ static void loongson_daemon_dispose (GObject *object)
         g_bus_unown_name (daemon->bus_name_id);
         daemon->bus_name_id = 0;
     }
+    
+    if (daemon->fd > 0)
+    {
+        close (daemon->fd);
+    }
     G_OBJECT_CLASS (loongson_daemon_parent_class)->dispose (object);
 }
 
@@ -246,10 +309,20 @@ static void loongson_daemon_class_init (LoongsonDaemonClass *class)
 
 static void loongson_daemon_init (LoongsonDaemon *daemon)
 {
-    daemon->skeleton = loong_daemon_skeleton_new();
+    daemon->skeleton = loong_daemon_skeleton_new ();
 }
 
 LoongsonDaemon* loongson_daemon_new (GMainLoop *loop, gboolean replace)
 {
-    return g_object_new (LOONGSON_TYPE_DAEMON, "loop", loop, NULL);
+    LoongsonDaemon *daemon;
+
+    daemon = g_object_new (LOONGSON_TYPE_DAEMON, "loop", loop, NULL);
+    
+    daemon->fd = open ("/dev/mem", O_RDWR|O_SYNC);
+    if (daemon->fd < 0)
+    {
+        return NULL;
+    }
+
+    return daemon;
 }

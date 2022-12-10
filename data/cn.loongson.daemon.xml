@@ -22,12 +22,15 @@
         </method>
 
         <method name="CpuTemperature">
-            <arg name="temp" type="s" direction="out"/>
+            <arg name="temp" type="u" direction="out"/>
         </method>
 
-        <method name="FanSpeed">
-            <arg name="speed" type="s" direction="out"/>
+        <method name="SetFanSpeed">
+            <arg name="speed" direction="in" type="u"/>
         </method>
+
+        <property name="GetFanSpeed" type="u" access="read">
+        </property>
 
     </interface>
 </node>
