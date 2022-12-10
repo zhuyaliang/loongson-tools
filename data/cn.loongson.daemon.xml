@@ -26,10 +26,10 @@
         </method>
 
         <method name="SetFanSpeed">
-            <arg name="speed" direction="in" type="u"/>
+            <arg name="speed" direction="in" type="i"/>
         </method>
 
-        <property name="GetFanSpeed" type="u" access="read">
+        <property name="GetFanSpeed" type="i" access="read">
         </property>
 
     </interface>

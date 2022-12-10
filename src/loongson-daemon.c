@@ -14,6 +14,8 @@
 #define LOONGSON_DBUS_NAME    "cn.loongson.daemon"
 #define LOONGSON_DBUS_PATH    "/cn/loongson/daemon"
 
+#define SPEEDFILE             "/var/lib/fan/config"
+
 typedef unsigned long long ull;
 typedef unsigned short     UINT16;
 typedef unsigned int       UINT32;
@@ -21,12 +23,13 @@ typedef unsigned char      UINT8;
 
 struct _LoongsonDaemon
 {
-    GObject            parent;
-    LoongDaemon       *skeleton;
-    guint              bus_name_id;
-    int                fd;
-    GMainLoop         *loop;
-    gboolean           replace;
+    GObject         parent;
+    LoongDaemon    *skeleton;
+    guint           bus_name_id;
+    int             fd;
+    GKeyFile       *kconfig; 
+    GMainLoop      *loop;
+    gboolean        replace;
 };
 
 enum {
@@ -95,7 +98,7 @@ static gboolean loongson_daemon_get_cpu_temperature (LoongDaemon *object,
 
 static gboolean loongson_daemon_set_fan_speed (LoongDaemon *object,
                                                GDBusMI     *invocation,
-                                               guint        speed,
+                                               gint         speed,
                                                gpointer     user_data)
 {
     LoongsonDaemon *daemon = LOONGSON_DAEMON (user_data);
@@ -117,6 +120,13 @@ static gboolean loongson_daemon_set_fan_speed (LoongDaemon *object,
 
     loong_daemon_complete_set_fan_speed (object, invocation);
     loong_daemon_set_get_fan_speed (object, speed);
+
+    g_key_file_set_integer (daemon->kconfig,
+                            "fan",
+                            "speed",
+                            speed);
+
+    g_key_file_save_to_file (daemon->kconfig, SPEEDFILE, NULL);
 
     return TRUE;
 }
@@ -167,7 +177,6 @@ static gboolean loongson_daemon_get_firmware_vendor (LoongDaemon *object,
 
 static void set_dbus_signal_method (LoongsonDaemon *daemon)
 {
-    loong_daemon_set_get_fan_speed (daemon->skeleton, 80);
     g_signal_connect (daemon->skeleton, "handle_bios_version", G_CALLBACK (loongson_daemon_get_biso_version), daemon);
     g_signal_connect (daemon->skeleton, "handle_cpu_temperature", G_CALLBACK (loongson_daemon_get_cpu_temperature), daemon);
     g_signal_connect (daemon->skeleton, "handle_set_fan_speed", G_CALLBACK (loongson_daemon_set_fan_speed), daemon);
@@ -175,6 +184,26 @@ static void set_dbus_signal_method (LoongsonDaemon *daemon)
     g_signal_connect (daemon->skeleton, "handle_firmware_name", G_CALLBACK (loongson_daemon_get_firmware_name), daemon);
     g_signal_connect (daemon->skeleton, "handle_firmware_update", G_CALLBACK (loongson_daemon_firmware_update), daemon);
     g_signal_connect (daemon->skeleton, "handle_firmware_vendor", G_CALLBACK (loongson_daemon_get_firmware_vendor), daemon);
+
+}
+
+static void get_config_fan_speed (LoongsonDaemon *daemon)
+{
+    gint speed = -1;
+    
+    daemon->kconfig = g_key_file_new ();    
+
+    if (access (SPEEDFILE, F_OK) != 0)
+    {
+        loong_daemon_set_get_fan_speed (daemon->skeleton, speed);
+        
+        return;
+    }
+    
+    g_key_file_load_from_file (daemon->kconfig, SPEEDFILE, G_KEY_FILE_NONE, NULL);
+
+    speed = g_key_file_get_integer (daemon->kconfig, "fan", "speed", NULL);
+    loong_daemon_set_get_fan_speed (daemon->skeleton, speed);
 
 }
 
@@ -189,6 +218,7 @@ static void bus_acquired_handler_cb (GDBusConnection *connection,
 
     daemon = LOONGSON_DAEMON (user_data);
 
+    get_config_fan_speed (daemon);
     set_dbus_signal_method (daemon);
     exported = g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (daemon->skeleton),
             connection, LOONGSON_DBUS_PATH, &error);
