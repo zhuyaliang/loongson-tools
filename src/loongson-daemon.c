@@ -8,6 +8,7 @@
 #include "daemon-dbus-generated.h"
 #include "loongson-daemon.h"
 #include "dmidecode.h"
+#include "spi.h"
 
 #define LS7A_CONF_BASE_ADDR   0x10010000
 #define LS7A_MISC_BASE_ADDR   0x10080000
@@ -21,6 +22,8 @@ typedef unsigned long long ull;
 typedef unsigned short     UINT16;
 typedef unsigned int       UINT32;
 typedef unsigned char      UINT8;
+
+UINT64 SPI_REG_BASE;
 
 struct _LoongsonDaemon
 {
@@ -166,13 +169,35 @@ static gboolean loongson_daemon_get_firmware_name (LoongDaemon *object,
 }
 
 static gboolean loongson_daemon_firmware_update (LoongDaemon *object,
-                                                     GDBusMI     *invocation,
-                                                     const char  *file,
-                                                     gpointer     user_data)
+                                                 GDBusMI     *invocation,
+                                                 const char  *file,
+                                                 gpointer     user_data)
 {
 
-    loong_daemon_complete_firmware_update (object, invocation);
+    LoongsonDaemon *daemon = LOONGSON_DAEMON (user_data);
+    char *p = NULL;
+    ull   devaddr;
+    char *buf;
+    FILE *pfile;
     
+    g_return_val_if_fail (access (SPEEDFILE, F_OK) == 0, FALSE);
+
+    devaddr = 0x1fe001f0;
+
+    p = vtpa (devaddr, daemon->fd);
+    SPI_REG_BASE = (UINTN)p;
+
+    buf = malloc (FLASH_SIZE);
+    pfile = fopen (file, "r");
+    fread (buf, FLASH_SIZE, 1, pfile);
+
+    if (UpdateBiosInSpiFlash(0, buf, FLASH_SIZE) == FALSE)
+    {
+        return FALSE;
+    }
+
+    loong_daemon_complete_firmware_update (object, invocation);
+
     return TRUE;
 }
 
