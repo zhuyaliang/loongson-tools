@@ -66,7 +66,10 @@ static gboolean loongson_daemon_get_biso_version (LoongDaemon *object,
                                                   GDBusMI     *invocation,
                                                   gpointer     user_data)
 {
-    gchar *bios_version = "V2.0";
+    LoongsonDaemon *daemon = LOONGSON_DAEMON (user_data);
+    gchar *bios_version;
+    
+    bios_version = dmi_get_bios_version (daemon->dmidecode);
 
     loong_daemon_complete_bios_version (object, invocation, g_strdup (bios_version));
     
