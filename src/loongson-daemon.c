@@ -7,6 +7,7 @@
 #include <sys/mman.h>
 #include "daemon-dbus-generated.h"
 #include "loongson-daemon.h"
+#include "dmidecode.h"
 
 #define LS7A_CONF_BASE_ADDR   0x10010000
 #define LS7A_MISC_BASE_ADDR   0x10080000
@@ -25,6 +26,7 @@ struct _LoongsonDaemon
 {
     GObject         parent;
     LoongDaemon    *skeleton;
+    LoongsonDmidecode *dmidecode;
     guint           bus_name_id;
     int             fd;
     GKeyFile       *kconfig; 
@@ -135,7 +137,11 @@ static gboolean loongson_daemon_get_firmware_date (LoongDaemon *object,
                                                    GDBusMI     *invocation,
                                                    gpointer     user_data)
 {
-    gchar *date = "2022/12/07";
+    LoongsonDaemon *daemon = LOONGSON_DAEMON (user_data);
+    
+    gchar *date;
+    
+    date = dmi_get_firmware_date (daemon->dmidecode);
 
     loong_daemon_complete_firmware_date (object, invocation, g_strdup (date));
     
@@ -146,7 +152,10 @@ static gboolean loongson_daemon_get_firmware_name (LoongDaemon *object,
                                                    GDBusMI     *invocation,
                                                    gpointer     user_data)
 {
-    gchar *name = "Loongson-UDK2018-V1.49";
+    LoongsonDaemon *daemon = LOONGSON_DAEMON (user_data);
+    gchar *name;
+
+    name = dmi_get_firmware_name (daemon->dmidecode);
 
     loong_daemon_complete_firmware_name (object, invocation, g_strdup (name));
     
@@ -168,8 +177,11 @@ static gboolean loongson_daemon_get_firmware_vendor (LoongDaemon *object,
                                                      GDBusMI     *invocation,
                                                      gpointer     user_data)
 {
-    gchar *vendor = "Loongson";
+    LoongsonDaemon *daemon = LOONGSON_DAEMON (user_data);
+    gchar *vendor;
 
+    vendor = dmi_get_firmware_vendor (daemon->dmidecode);
+    
     loong_daemon_complete_firmware_vendor (object, invocation, g_strdup (vendor));
     
     return TRUE;
@@ -344,13 +356,19 @@ static void loongson_daemon_init (LoongsonDaemon *daemon)
 
 LoongsonDaemon* loongson_daemon_new (GMainLoop *loop, gboolean replace)
 {
-    LoongsonDaemon *daemon;
+    LoongsonDaemon    *daemon;
 
     daemon = g_object_new (LOONGSON_TYPE_DAEMON, "loop", loop, NULL);
     
     daemon->fd = open ("/dev/mem", O_RDWR|O_SYNC);
     if (daemon->fd < 0)
     {
+        return NULL;
+    }
+    
+    daemon->dmidecode = loongson_dmidecode_new ();
+    if (daemon->dmidecode == NULL)
+    {   
         return NULL;
     }
 

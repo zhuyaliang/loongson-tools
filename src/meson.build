@@ -18,7 +18,7 @@ gdbus_src = gnome.gdbus_codegen(
 executable(
     'loongson-daemond',
     gdbus_src,
-    sources : ['loongson-daemon.h', 'loongson-daemon.c', 'loongson-server.c'],
+    sources : ['loongson-daemon.h', 'loongson-daemon.c', 'loongson-server.c', 'dmidecode.c'],
     dependencies : [gio_dep, gio_os_dep, gtop_dep],
     install : true,
     install_dir : join_paths(get_option('prefix'), get_option('libexecdir'), 'loongson-daemon')
