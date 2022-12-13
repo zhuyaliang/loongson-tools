@@ -127,7 +127,7 @@ static gboolean loongson_daemon_set_fan_speed (LoongDaemon *object,
     Readl ((unsigned char*)p + LS7A_PWM0_CTRL) |= 1;
 
     loong_daemon_complete_set_fan_speed (object, invocation);
-    loong_daemon_set_get_fan_speed (object, speed);
+    loong_daemon_set_fan_speed (object, speed);
 
     g_key_file_set_integer (daemon->kconfig,
                             "fan",
@@ -235,7 +235,7 @@ static void get_config_fan_speed (LoongsonDaemon *daemon)
 
     if (access (SPEEDFILE, F_OK) != 0)
     {
-        loong_daemon_set_get_fan_speed (daemon->skeleton, speed);
+        loong_daemon_set_fan_speed (daemon->skeleton, speed);
         
         return;
     }
@@ -243,7 +243,7 @@ static void get_config_fan_speed (LoongsonDaemon *daemon)
     g_key_file_load_from_file (daemon->kconfig, SPEEDFILE, G_KEY_FILE_NONE, NULL);
 
     speed = g_key_file_get_integer (daemon->kconfig, "fan", "speed", NULL);
-    loong_daemon_set_get_fan_speed (daemon->skeleton, speed);
+    loong_daemon_set_fan_speed (daemon->skeleton, speed);
 
 }
 

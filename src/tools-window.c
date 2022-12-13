@@ -113,7 +113,7 @@ tools_window_init (ToolsWindow *toolswin)
 static void tools_window_update (ToolsWindow *win)
 {
     loongson_firmware_update (LOONGSON_FIRMWARE (win->firmware), win->proxy);
-    loongson_fan_update (LOONGSON_FAN (win->fan));
+    loongson_fan_update (LOONGSON_FAN (win->fan), win->proxy);
 }
 
 

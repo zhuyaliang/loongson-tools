@@ -29,7 +29,7 @@
             <arg name="speed" direction="in" type="i"/>
         </method>
 
-        <property name="GetFanSpeed" type="i" access="read">
+        <property name="FanSpeed" type="i" access="read">
         </property>
 
     </interface>

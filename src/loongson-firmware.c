@@ -168,7 +168,7 @@ loongson_firmware_init (LoongsonFirmware *firmware)
 {
     gtk_orientable_set_orientation (GTK_ORIENTABLE (firmware), GTK_ORIENTATION_VERTICAL);
     
-    firmware->image = g_strdup ("./firmware.png");
+    firmware->image = g_strdup ("/usr/share/loongson-tools/icons/loongson-firmware.png");
     firmware->name = g_strdup ("firmware");
 }
 

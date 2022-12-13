@@ -5,6 +5,7 @@
 #include <libintl.h>
 #include <locale.h>
 #include <glib/gi18n.h>
+#include "daemon-dbus-generated.h"
 
 G_BEGIN_DECLS
 
@@ -16,7 +17,8 @@ GtkWidget      *loongson_fan_new                  (void);
 
 GtkWidget      *loongson_fan_get_label            (LoongsonFan *fan);
 
-void            loongson_fan_update               (LoongsonFan *fan);
+void            loongson_fan_update               (LoongsonFan *fan,
+                                                   LoongDaemon *proxy);
 
 G_END_DECLS
 

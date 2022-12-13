@@ -23,7 +23,9 @@
 
 struct _LoongsonFan
 {
-    GtkBox     box;
+    GtkBox        box;
+    LoongDaemon  *proxy;
+
     char      *name;
     char      *image;
     GtkWidget *scale;
@@ -127,14 +129,26 @@ loongson_fan_init (LoongsonFan *fan)
 {
     gtk_orientable_set_orientation (GTK_ORIENTABLE (fan), GTK_ORIENTATION_VERTICAL);
     
-    fan->image = g_strdup ("./fan.png");
+    fan->image = g_strdup ("/usr/share/loongson-tools/icons/loongson-fan.png");
     fan->name = g_strdup ("fan");
 }
 
 static gboolean
 update_loongson_temp (LoongsonFan *fan)
 {
-    set_lable_style (fan->temp_label, "red", 14, "CPU温度：66", TRUE);
+    guint   temperature;
+    char   *text;
+    GError *error = NULL;
+
+    loong_daemon_call_cpu_temperature_sync (fan->proxy,
+                                           &temperature,
+                                            NULL,
+                                           &error);
+
+    text = g_strdup_printf (_("CPU temperature: %u"), temperature);
+    set_lable_style (fan->temp_label, "red", 14, text, TRUE);
+
+    g_free (text);
     
     return TRUE;
 }
@@ -160,11 +174,17 @@ loongson_fan_get_label (LoongsonFan *fan)
 }
 
 void
-loongson_fan_update (LoongsonFan *fan)
+loongson_fan_update (LoongsonFan *fan, LoongDaemon  *proxy)
 {
+    gint fan_speed;
+
     if (fan->time_id > 0)
         g_source_remove (fan->time_id);
-
+    
+    fan->proxy  = proxy;
     fan->time_id = g_timeout_add (1000, (GSourceFunc) update_loongson_temp, fan);
+    fan_speed  = loong_daemon_get_fan_speed (proxy);
+
+    g_print ("fsn_speed = %d\r\n",fan_speed);
     gtk_range_set_value (GTK_RANGE (fan->scale),  80.0);
 }
