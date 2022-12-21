@@ -26,6 +26,7 @@ struct _LoongsonFirmware
     GtkBox     box;
     char      *name;
     char      *image;
+    char      *filename;
     GtkWidget *name_label;
     GtkWidget *time_label;
     GtkWidget *vendor_label;
@@ -34,6 +35,19 @@ struct _LoongsonFirmware
 };
 
 G_DEFINE_TYPE (LoongsonFirmware, loongson_firmware, GTK_TYPE_BOX)
+
+static void
+chooser_selection_changed_cb (GtkFileChooser *chooser,
+                              gpointer        user_data)
+{
+    LoongsonFirmware *firmware;
+
+    firmware = LOONGSON_FIRMWARE (user_data);
+
+    firmware->filename = gtk_file_chooser_get_filename (chooser);
+    gtk_widget_set_sensitive (firmware->update_button, TRUE);
+  
+}
 
 static void
 loongson_firmware_fill (LoongsonFirmware *firmware)
@@ -116,10 +130,16 @@ loongson_firmware_fill (LoongsonFirmware *firmware)
     gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 12);
     picker = gtk_file_chooser_button_new ("Pick a File",
                                           GTK_FILE_CHOOSER_ACTION_OPEN);
+    g_signal_connect (picker,
+                     "selection-changed",
+                      G_CALLBACK (chooser_selection_changed_cb),
+                      firmware);
+
     gtk_file_chooser_set_local_only (GTK_FILE_CHOOSER (picker), FALSE);
     gtk_box_pack_start (GTK_BOX (hbox), picker, FALSE, FALSE, 6);
 
-    firmware->update_button = gtk_button_new_with_label ("更新固件");
+    firmware->update_button = gtk_button_new_with_label (_("Start Update"));
+    gtk_widget_set_sensitive (firmware->update_button, FALSE);
     gtk_box_pack_end (GTK_BOX (hbox), firmware->update_button, FALSE, FALSE, 12);
 
 }
@@ -151,6 +171,8 @@ loongson_firmware_finalize (GObject *object)
     
     g_free (firmware->image);
     g_free (firmware->name);
+    if (firmware->filename != NULL)
+        g_free (firmware->filename);
     G_OBJECT_CLASS (loongson_firmware_parent_class)->finalize (object);
 }
 
@@ -196,6 +218,9 @@ void
 loongson_firmware_update (LoongsonFirmware *firmware, LoongDaemon  *proxy)
 {
     char *name;
+    char *date;
+    char *vendor;
+    char *bios;
     GError *error = NULL;
 
     loong_daemon_call_firmware_name_sync (proxy,
@@ -203,8 +228,23 @@ loongson_firmware_update (LoongsonFirmware *firmware, LoongDaemon  *proxy)
                                           NULL,
                                           &error);
 
+    loong_daemon_call_firmware_date_sync (proxy,
+                                          &date,
+                                          NULL,
+                                          &error);
+
+    loong_daemon_call_firmware_vendor_sync (proxy,
+                                            &vendor,
+                                            NULL,
+                                            &error);
+
+    loong_daemon_call_bios_version_sync (proxy,
+                                         &bios,
+                                         NULL,
+                                         &error);
+
     set_lable_style (firmware->name_label, "gray", 14, name, TRUE);
-    set_lable_style (firmware->time_label, "gray", 14, "2022/12/06", TRUE);
-    set_lable_style (firmware->vendor_label, "gray", 14, "Loongson", TRUE);
-    set_lable_style (firmware->bios_label, "gray", 14, "v2.0", TRUE);
+    set_lable_style (firmware->time_label, "gray", 14, date, TRUE);
+    set_lable_style (firmware->vendor_label, "gray", 14, vendor, TRUE);
+    set_lable_style (firmware->bios_label, "gray", 14, bios, TRUE);
 }
