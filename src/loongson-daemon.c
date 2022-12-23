@@ -168,6 +168,13 @@ static gboolean loongson_daemon_get_firmware_name (LoongDaemon *object,
     return TRUE;
 }
 
+static gboolean time_update_bios (gpointer user_data)
+{
+    UpdateBiosInSpiFlash (0, (char *)user_data, FLASH_SIZE);
+
+    return FALSE;
+}
+
 static gboolean loongson_daemon_firmware_update (LoongDaemon *object,
                                                  GDBusMI     *invocation,
                                                  const char  *file,
@@ -180,7 +187,7 @@ static gboolean loongson_daemon_firmware_update (LoongDaemon *object,
     char *buf;
     FILE *pfile;
     
-    g_return_val_if_fail (access (SPEEDFILE, F_OK) == 0, FALSE);
+    g_return_val_if_fail (access (file, F_OK) == 0, FALSE);
 
     devaddr = 0x1fe001f0;
 
@@ -191,10 +198,7 @@ static gboolean loongson_daemon_firmware_update (LoongDaemon *object,
     pfile = fopen (file, "r");
     fread (buf, FLASH_SIZE, 1, pfile);
 
-    if (UpdateBiosInSpiFlash(0, buf, FLASH_SIZE) == FALSE)
-    {
-        return FALSE;
-    }
+    g_timeout_add (300, (GSourceFunc) time_update_bios, buf);
 
     loong_daemon_complete_firmware_update (object, invocation);
 
