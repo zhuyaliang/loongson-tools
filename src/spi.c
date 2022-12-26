@@ -85,9 +85,7 @@
 #define LS3APROC_PLL_REG     0x900000001fe001d0
 #define LS3APROC_MISC_REG    0x900000001fe00420
 
-#define INVALID_OFFSET(x)     ((x > 0x400000)||(x < 0)) ? TRUE:FALSE
 #define TCM_INVALID_OFFSET(x)     ((x > 0xffffffff)||(x < 0x0)) ? TRUE:FALSE
-#define INVALID_NUM(x)        ((x > 0x400000)||( x <= 0x0)) ? TRUE:FALSE
 #define IS_SST25VF032B(M,D,C) ((M == 0xBF)&&(D == 0x25)&&(C == 0x4A)) ? TRUE:FALSE
 
 static UINT8 ValueRegSpcr  = 0xFF;
@@ -333,7 +331,8 @@ SpiFlashEraseBlock (
 static void
 SpiFlashEraseAndWriteBlocks (UINTN      Offset,
                              char      *Buffer,
-                             UINTN      Num)
+                             UINTN      Num,
+                             LoongDaemon *object)
 {
     UINTN  Pos = Offset;
     UINT8  *Buf = (UINT8 *) Buffer;
@@ -347,6 +346,7 @@ SpiFlashEraseAndWriteBlocks (UINTN      Offset,
     do {
         if ((Pos % (4 * BLKSIZE)) == 0) {
             printf("*");
+            loong_daemon_emit_firmware_progress (object, 10);
             fflush(stdout);
         }
         Addr0 =  Pos & 0xff;
@@ -379,13 +379,14 @@ SpiFlashEraseAndWriteBlocks (UINTN      Offset,
 }
 
 gboolean
-UpdateBiosInSpiFlash (UINTN      Offset,
-                      char      *Buffer,
-                      UINTN      Num)
+UpdateBiosInSpiFlash (UINTN        Offset,
+                      char        *Buffer,
+                      UINTN        Num,
+                      LoongDaemon *object)
 {
     SpiFlashInit ();
     SpiFlashDisableWriteProtection ();
-    SpiFlashEraseAndWriteBlocks (Offset, Buffer, Num);
+    SpiFlashEraseAndWriteBlocks (Offset, Buffer, Num, object);
     SpiFlashEnableWriteProtection ();
     SpiFlashReset ();
     ResetSfcParamReg();

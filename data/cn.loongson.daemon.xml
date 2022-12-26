@@ -32,5 +32,10 @@
         <property name="FanSpeed" type="i" access="read">
         </property>
 
+       <signal name="FirmwareProgress">
+            <arg name="percent" type="d">
+           </arg>
+       </signal>
+
     </interface>
 </node>

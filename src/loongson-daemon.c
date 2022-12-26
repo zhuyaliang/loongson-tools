@@ -32,6 +32,7 @@ struct _LoongsonDaemon
     LoongsonDmidecode *dmidecode;
     guint           bus_name_id;
     int             fd;
+    char           *buf;
     GKeyFile       *kconfig; 
     GMainLoop      *loop;
     gboolean        replace;
@@ -170,7 +171,9 @@ static gboolean loongson_daemon_get_firmware_name (LoongDaemon *object,
 
 static gboolean time_update_bios (gpointer user_data)
 {
-    UpdateBiosInSpiFlash (0, (char *)user_data, FLASH_SIZE);
+    LoongsonDaemon *daemon = LOONGSON_DAEMON (user_data);
+    
+    UpdateBiosInSpiFlash (0, daemon->buf, FLASH_SIZE, daemon->skeleton);
 
     return FALSE;
 }
@@ -184,7 +187,6 @@ static gboolean loongson_daemon_firmware_update (LoongDaemon *object,
     LoongsonDaemon *daemon = LOONGSON_DAEMON (user_data);
     char *p = NULL;
     ull   devaddr;
-    char *buf;
     FILE *pfile;
     
     g_return_val_if_fail (access (file, F_OK) == 0, FALSE);
@@ -194,14 +196,14 @@ static gboolean loongson_daemon_firmware_update (LoongDaemon *object,
     p = vtpa (devaddr, daemon->fd);
     SPI_REG_BASE = (UINTN)p;
 
-    buf = malloc (FLASH_SIZE);
     pfile = fopen (file, "r");
-    fread (buf, FLASH_SIZE, 1, pfile);
+    fread (daemon->buf, FLASH_SIZE, 1, pfile);
 
-    g_timeout_add (300, (GSourceFunc) time_update_bios, buf);
+    g_timeout_add (300, (GSourceFunc) time_update_bios, daemon);
 
     loong_daemon_complete_firmware_update (object, invocation);
-
+    
+    fclose (pfile);
     return TRUE;
 }
 
@@ -334,6 +336,11 @@ static void loongson_daemon_dispose (GObject *object)
     {
         close (daemon->fd);
     }
+
+    if (daemon->buf != NULL)
+    {
+        free (daemon->buf);
+    }
     G_OBJECT_CLASS (loongson_daemon_parent_class)->dispose (object);
 }
 
@@ -384,6 +391,7 @@ static void loongson_daemon_class_init (LoongsonDaemonClass *class)
 static void loongson_daemon_init (LoongsonDaemon *daemon)
 {
     daemon->skeleton = loong_daemon_skeleton_new ();
+    daemon->buf = malloc (FLASH_SIZE);
 }
 
 LoongsonDaemon* loongson_daemon_new (GMainLoop *loop, gboolean replace)

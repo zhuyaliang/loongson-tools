@@ -2,6 +2,7 @@
 #define __SPI_H__ 
 
 #include <glib-object.h>
+#include "daemon-dbus-generated.h"
 
 #define FLASH_SIZE             4128768
 
@@ -19,7 +20,8 @@ typedef unsigned long long  UINTN;
 extern UINT64 SPI_REG_BASE;
 
 gboolean
-UpdateBiosInSpiFlash             (UINTN      Offset,
-                                  char      *Buffer,
-                                  UINTN      Num);
+UpdateBiosInSpiFlash             (UINTN        Offset,
+                                  char        *Buffer,
+                                  UINTN        Num,
+                                  LoongDaemon *object);
 #endif
