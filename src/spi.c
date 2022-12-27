@@ -345,9 +345,7 @@ SpiFlashEraseAndWriteBlocks (UINTN      Offset,
     printf("Erase   : ");
     do {
         if ((Pos % (4 * BLKSIZE)) == 0) {
-            printf("*");
-            loong_daemon_emit_firmware_progress (object, 10);
-            fflush(stdout);
+            loong_daemon_emit_firmware_progress (object, Pos * 50.0 / Num);
         }
         Addr0 =  Pos & 0xff;
         Addr1 =  (Pos >> 8) & 0xff;
@@ -365,8 +363,7 @@ SpiFlashEraseAndWriteBlocks (UINTN      Offset,
     printf("Program : ");
     while (Index < Num) {
         if ((Index % 0x4000) == 0) {
-            printf("*");
-            fflush(stdout);
+            loong_daemon_emit_firmware_progress (object, Index * 50.0 / Num);
         }
         Addr0 = (Pos + Index) & 0xff;
         Addr1 = ((Pos + Index) >> 8) & 0xff;

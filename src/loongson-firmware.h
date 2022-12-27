@@ -17,9 +17,10 @@ GtkWidget      *loongson_firmware_new                  (void);
 
 GtkWidget      *loongson_firmware_get_label            (LoongsonFirmware *firmware);
 
-void            loongson_firmware_update               (LoongsonFirmware *firmware,
-                                                        LoongDaemon      *proxy);
+void            loongson_firmware_update               (LoongsonFirmware *firmware);
 
+void            loongson_firmware_set_proxy            (LoongsonFirmware *firmware,
+                                                        LoongDaemon      *proxy);
 G_END_DECLS
 
 #endif

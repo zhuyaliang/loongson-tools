@@ -24,6 +24,7 @@
 struct _LoongsonFirmware
 {
     GtkBox     box;
+    LoongDaemon *proxy;
     char      *name;
     char      *image;
     char      *filename;
@@ -47,6 +48,25 @@ chooser_selection_changed_cb (GtkFileChooser *chooser,
     firmware->filename = gtk_file_chooser_get_filename (chooser);
     gtk_widget_set_sensitive (firmware->update_button, TRUE);
   
+}
+
+static void
+start_update_firmware (GtkButton        *button,
+                       LoongsonFirmware *firmware)
+{
+    GError  *error = NULL;
+    gboolean ret; 
+
+    ret = loong_daemon_call_firmware_update_sync (firmware->proxy,
+                                                  firmware->filename,
+                                                  NULL,
+                                                 &error);
+
+    if (ret != TRUE)
+    {
+       loongson_message_dialog (_("update filename"), WARING, error->message);
+       g_error_free (error);
+    }
 }
 
 static void
@@ -139,6 +159,11 @@ loongson_firmware_fill (LoongsonFirmware *firmware)
     gtk_box_pack_start (GTK_BOX (hbox), picker, FALSE, FALSE, 6);
 
     firmware->update_button = gtk_button_new_with_label (_("Start Update"));
+    g_signal_connect (firmware->update_button,
+                     "clicked",
+                      G_CALLBACK (start_update_firmware),
+                      firmware);
+
     gtk_widget_set_sensitive (firmware->update_button, FALSE);
     gtk_box_pack_end (GTK_BOX (hbox), firmware->update_button, FALSE, FALSE, 12);
 
@@ -214,8 +239,28 @@ loongson_firmware_get_label (LoongsonFirmware *firmware)
     return label;
 }
 
+static void firmware_update_progress (LoongsonFirmware *firmware,
+                                      double            percent)
+{
+    g_print ("percent = %lf\r\n",percent);
+}
+
+
+void loongson_firmware_set_proxy (LoongsonFirmware *firmware,
+                                  LoongDaemon      *proxy)
+{
+    firmware->proxy = proxy;
+
+    g_signal_connect_object (proxy,
+                            "firmware-progress",
+                             G_CALLBACK(firmware_update_progress),
+                             firmware,
+                             G_CONNECT_SWAPPED);
+
+}
+
 void
-loongson_firmware_update (LoongsonFirmware *firmware, LoongDaemon  *proxy)
+loongson_firmware_update (LoongsonFirmware *firmware)
 {
     char *name;
     char *date;
@@ -223,22 +268,22 @@ loongson_firmware_update (LoongsonFirmware *firmware, LoongDaemon  *proxy)
     char *bios;
     GError *error = NULL;
 
-    loong_daemon_call_firmware_name_sync (proxy,
+    loong_daemon_call_firmware_name_sync (firmware->proxy,
                                           &name,
                                           NULL,
                                           &error);
 
-    loong_daemon_call_firmware_date_sync (proxy,
+    loong_daemon_call_firmware_date_sync (firmware->proxy,
                                           &date,
                                           NULL,
                                           &error);
 
-    loong_daemon_call_firmware_vendor_sync (proxy,
+    loong_daemon_call_firmware_vendor_sync (firmware->proxy,
                                             &vendor,
                                             NULL,
                                             &error);
 
-    loong_daemon_call_bios_version_sync (proxy,
+    loong_daemon_call_bios_version_sync (firmware->proxy,
                                          &bios,
                                          NULL,
                                          &error);

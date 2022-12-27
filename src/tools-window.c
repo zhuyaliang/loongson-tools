@@ -112,7 +112,7 @@ tools_window_init (ToolsWindow *toolswin)
 
 static void tools_window_update (ToolsWindow *win)
 {
-    loongson_firmware_update (LOONGSON_FIRMWARE (win->firmware), win->proxy);
+    loongson_firmware_update (LOONGSON_FIRMWARE (win->firmware));
     loongson_fan_update (LOONGSON_FAN (win->fan), win->proxy);
 }
 
@@ -139,7 +139,8 @@ tools_window_new (void)
         loongson_message_dialog (_("Daemon Proxy"), ERROR, error->message);
         return NULL;
     }
-
+    
+    loongson_firmware_set_proxy (LOONGSON_FIRMWARE (toolswin->firmware), toolswin->proxy);
     tools_window_update (toolswin);
     
     return GTK_WIDGET (toolswin);
